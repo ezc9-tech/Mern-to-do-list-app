@@ -2,7 +2,7 @@ import Task from "../models/taskModel.js"
 
 export async function getAllTasks(req, res){
     try {
-        const tasks = await Task.find()
+        const tasks = await Task.find({ user: req.session.userId})
         res.status(200).json({message:"Got all tasks", tasks})
     } catch (error) {
         res.status(500).json({message:"Could not fetch all tasks", error})
@@ -12,7 +12,7 @@ export async function getAllTasks(req, res){
 export async function getOneTask(req, res){
     try {
         const taskID = req.params.id
-        const requestedTask = await Task.findById(taskID)
+        const requestedTask = await Task.findOne({ _id: taskID, user: req.session.userId})
         if (!requestedTask) {
           return res.status(404).json({ message: "Could not find task with that id" });
         }
@@ -24,11 +24,11 @@ export async function getOneTask(req, res){
 
 export async function createTask(req, res){
     try {
-        const {title, description, completed, userID} = req.body
-        if (!title || !userID) {
-            return res.status(400).json({message: "Title and user ID are required"})
+        const {title, description, completed} = req.body
+        if (!title) {
+            return res.status(400).json({message: "Title is required"})
         }
-        const newTask = new Task({ title, description, completed, userID });
+        const newTask = new Task({ title, description, completed, user: req.session.userId });
         await newTask.save()
         res.status(201).json({message: "Created a task", newTask})
     } catch (error) {
@@ -40,7 +40,7 @@ export async function updateTask(req, res){
     try {
         const taskID = req.params.id;
         const updates = req.body;
-        const updatedTask = await Task.findByIdAndUpdate(taskID, updates, {runValidators: true, new: true})
+        const updatedTask = await Task.findOneAndUpdate({_id: taskID, user: req.session.userId}, updates, {runValidators: true, new: true})
         if (!updatedTask){
             return res.status(404).json({message: "Could not find task with that id"});
         }
@@ -55,7 +55,7 @@ export async function updateTask(req, res){
 export async function deleteTask(req, res){
     try {
         const taskID = req.params.id;
-        const deletedTask = await Task.findByIdAndDelete(taskID)
+        const deletedTask = await Task.findOneAndDelete({_id: taskID, user: req.session.userId})
         if (!deletedTask){
             return res.status(404).json({message: "Could not find task with that id"});
         }
